@@ -1,5 +1,7 @@
 package fpinscala.datastructures
 
+import scala.annotation.tailrec
+
 sealed trait List[+A] // `List` data type, parameterized on a type, `A`
 case object Nil extends List[Nothing] // A `List` data constructor representing the empty list
 case class Cons[+A](head: A, tail: List[A]) extends List[A] // Another data constructor, representing nonempty lists. Note that `tail` is another `List[A]`, which may be `Nil` or another `Cons`.
@@ -47,19 +49,73 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRight(l, 1.0)(_ * _) // `_ * _` is more concise notation for `(x,y) => x * y`, see sidebar
 
 
-  def tail[A](l: List[A]): List[A] = sys.error("todo")
+  def tail[A](l: List[A]): List[A] = l match {
+    case Nil => throw new Exception("tail on Nil")
+    case Cons(x,xs) => xs
+  }
 
-  def setHead[A](l: List[A])(h: A): List[A] = sys.error("todo")
+  def setHead[A](l: List[A])(h: A): List[A] = l match {
+    case Nil => throw new Exception("setHead on Nil")
+    case Cons(x,xs) => Cons(h,xs)
+  }
 
-  def drop[A](l: List[A], n: Int): List[A] = sys.error("todo")
+  @tailrec
+  def drop[A](l: List[A], n: Int): List[A] = {
+    if (n <= 0) l
+    else {
+      l match {
+        case Nil => throw new Exception("drop on Nil")
+        case Cons(x,xs) => drop(xs, n-1)
+      }
+    }
+  }
 
-  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = sys.error("todo")
+  @tailrec
+  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
+    case Nil => l
+    case Cons(x,xs) => if (f(x)) dropWhile(xs, f)
+                       else Cons(x,xs)
+  }
 
-  def init[A](l: List[A]): List[A] = sys.error("todo")
+  def init[A](l: List[A]): List[A] = {
+    def initAux(l: List[A]): List[A] = l match {
+      case Nil => throw new Exception("init on Nil")
+      case Cons(x, Nil) => Nil
+      case Cons(x,xs) => Cons(x, initAux(xs))
+    }
+    initAux(l)
+  }
 
-  def length[A](l: List[A]): Int = sys.error("todo")
+  def length[A](l: List[A]): Int = foldRight(l, 0)((x,y) => y + 1)
 
-  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = sys.error("todo")
+  @tailrec
+  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = {
+    l match {
+      case Nil => z
+      case Cons(x, xs) => foldLeft(xs, f(z,x))(f)
+    }
+  }
+
+  // Exercise 11
+  def sum3(l: List[Int]) = foldLeft(l, 0)(_ + _)
+  def product3(l: List[Double]) = foldLeft(l, 1.0)(_ * _)
+  def length3[A](l: List[A]): Int = foldLeft(l, 0)((x,y) => x + 1)
+
+  // Exercise 12
+  def reverse[A](l: List[A]): List[A] = foldLeft(l, Nil: List[A])((a,x) => Cons(x,a))
+
+  // Exercise 13
+  // foldRight in term of foldLeft
+  def foldRight2[A,B](l: List[A], z: B)(f: (A,B) => B): B =
+    foldLeft(l, (t: B) => t)((b,a) => (t:B) => b(f(a,t)))(z)
+
+  // Exercise 14
+  def append2[A](l: List[A], r: List[A]): List[A] = foldRight(l, r)(Cons(_,_))
+  def append3[A](l: List[A], r: List[A]): List[A] = foldLeft(l, (t: List[A]) => t)((b,a) => t => b(Cons(a,t)))(r)
+
+  // Exercise 15
+  // foldRight with append guarantee that the runtime time is linear in the total length of the lists
+  def concat[A](ll: List[List[A]]): List[A] = foldRight(ll, Nil: List[A])(append)
 
   def map[A,B](l: List[A])(f: A => B): List[B] = sys.error("todo")
 }
